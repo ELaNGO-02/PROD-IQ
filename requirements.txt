@@ -12,6 +12,3 @@ flask-cors==4.0.0
 
 # Utils
 python-dateutil==2.8.2
-# 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
-
-# 371vGAN9aLemwr8B35P6oryeS0K_3HyCC53HPZLZKAz7RTD2c
