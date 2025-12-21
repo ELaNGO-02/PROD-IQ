@@ -1,0 +1,71 @@
+{
+  "success_label": [
+    "capital_efficiency",
+    "exit_status",
+    "failure_reason",
+    "failure_reason_cat",
+    "growth_score",
+    "is_dead",
+    "is_profitable",
+    "market_fit_score",
+    "monthly_profit_est",
+    "revenue_estimated",
+    "revenue_monthly",
+    "revenue_monthly_filled",
+    "revenue_to_burn_ratio",
+    "risk_score",
+    "shutdown_date",
+    "still_operating",
+    "success_label",
+    "success_reason",
+    "success_reason_cat",
+    "survival_months",
+    "survival_score"
+  ],
+  "still_operating": [
+    "exit_status",
+    "is_dead",
+    "shutdown_date",
+    "still_operating",
+    "survival_months",
+    "survival_score"
+  ],
+  "estimated_break_even_months": [
+    "base_break_even_months",
+    "estimated_break_even_months",
+    "estimated_runway_months",
+    "funding_adjustment",
+    "is_profitable",
+    "monthly_profit_est",
+    "team_adjustment"
+  ],
+  "revenue_estimated": [
+    "capital_efficiency",
+    "is_profitable",
+    "monthly_profit_est",
+    "revenue_estimated",
+    "revenue_monthly",
+    "revenue_monthly_filled",
+    "revenue_to_burn_ratio"
+  ],
+  "risk_score": [
+    "growth_score",
+    "market_fit_score",
+    "risk_score",
+    "survival_score"
+  ],
+  "market_fit_score": [
+    "growth_score",
+    "market_fit_score",
+    "rating_vs_category",
+    "risk_score",
+    "survival_score"
+  ],
+  "failure_reason_cat": [
+    "failure_reason",
+    "failure_reason_cat",
+    "risk_score",
+    "success_reason",
+    "success_reason_cat"
+  ]
+}

@@ -1,0 +1,70 @@
+TASK: Predict future revenue at 12/24/36 month horizons.
+
+MODEL: predict_revenue_estimate (Regression Model)
+OUTPUT: Expected monthly revenue at specified timeframe
+
+INPUTS REQUIRED:
+- main_category: product category
+- current_revenue: current monthly revenue
+- age_months: months since launch
+- funding_raised: total funding (affects burn rate and growth)
+- active_users: current user count
+- timeframe: 12, 24, or 36 months from now
+
+PREDICTION SCENARIOS:
+
+Call model 3 times if user wants full picture:
+- 12_month_revenue: Near-term realistic projection
+- 24_month_revenue: Medium-term growth scenario
+- 36_month_revenue: Long-term potential (if product survives)
+
+INTERPRETATION LOGIC:
+
+1. COMPARE to user's stated target (from extraction):
+   - If predicted < target: "Optimistic - model predicts [X]% lower"
+   - If predicted ≈ target: "Realistic - aligns with model"
+   - If predicted > target: "Conservative - model predicts [X]% higher"
+
+2. CALCULATE implied growth rate:
+   growth_rate = (predicted_revenue / current_revenue)^(1/months) - 1
+   
+3. BENCHMARK against category:
+   - Query category median revenue at same age
+   - Show: "Your predicted [X] vs category [Y] at [Z] months"
+
+4. CONFIDENCE BANDS:
+   - If current_revenue = 0 OR age_months < 3: "⚠️ High uncertainty"
+   - If current_revenue > 0 AND age_months > 6: "Moderate confidence"
+   - If strong trajectory + data: "High confidence"
+
+RESPONSE TEMPLATE:
+**Diagnosis:**
+Predicted revenue: $[X]K/mo in [timeframe] months ([VERDICT vs target]). Requires [Y]% monthly growth.
+
+**Options:**
+A. [Conservative path: Target predicted - 30%]
+B. [Realistic path: Target predicted revenue]
+C. [Optimistic path: Target predicted + 30%]
+
+**Timeline:**
+Month 6: $[X]K/mo
+Month 12: $[Y]K/mo
+Month 24: $[Z]K/mo
+
+**Next Steps:**
+- [What growth rate is needed monthly]
+- [Key driver to achieve prediction (users, pricing, retention)]
+- [Validation milestone for next 90 days]
+
+COMBINE WITH OTHER TOOLS:
+- Use validate_revenue to cross-check against real similar products
+- Use calculate_math to show user acquisition needed
+- Use predict_break_even_time to show profitability path
+
+CRITICAL NOTES:
+- If prediction shows declining revenue, flag potential failure signals
+- If growth required > 20% monthly consistently, warn about sustainability
+- If funding runway < time to meaningful revenue, flag cash risk
+- Always show prediction as estimate, not guarantee
+
+This prompt is loaded when tool_calls includes "predict_revenue_estimate".

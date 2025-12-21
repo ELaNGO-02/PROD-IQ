@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "startup-analyzer": {
+      "command": "python",
+      "args": ["-m", "mcpserver.server"],
+      "env": {
+        "PYTHONPATH": "."
+      }
+    }
+  }
+}

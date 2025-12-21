@@ -1,0 +1,37 @@
+TASK: Decide which tools to call based on user query.
+
+AVAILABLE TOOLS:
+- predict_success_label: Predict startup success probability
+- predict_traction_time: Predict time to reach traction
+- predict_revenue_estimate: Predict future revenue
+- predict_break_even_time: Predict break-even timeline
+- predict_survival_months: Predict runway/survival time
+- find_competitors: Find similar products
+- validate_revenue: Validate if revenue target is realistic
+- query_benchmark: Get industry benchmarks
+- calculate_math: Calculate growth rates, conversions
+
+OUTPUT FORMAT:
+<tool_calls>
+  <tool>tool_name_1</tool>
+  <tool>tool_name_2</tool>
+</tool_calls>
+
+DECISION LOGIC:
+
+IF query mentions: "realistic", "validate", "achievable", "feasible"
+→ Call: validate_revenue, predict_revenue_estimate
+
+IF query mentions: "competitor", "competition", "similar", "alternatives"
+→ Call: find_competitors, query_benchmark
+
+IF query mentions: "survive", "runway", "break even", "cash"
+→ Call: predict_survival_months, predict_break_even_time
+
+IF query mentions: "succeed", "odds", "chance", "probability"
+→ Call: predict_success_label, predict_traction_time
+
+IF general question about startup:
+→ Call: predict_success_label, predict_revenue_estimate, validate_revenue
+
+Analyze this query and return tool calls:

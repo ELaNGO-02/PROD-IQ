@@ -1,0 +1,62 @@
+TASK: Predict time until product reaches meaningful traction.
+
+MODEL: predict_traction_time (Regression Model)
+OUTPUT: Number of months until traction milestone
+
+TRACTION DEFINITION:
+- SaaS: $10K+ MRR OR 100+ paying customers
+- Mobile: 10K+ MAU OR app store featured OR monetization started
+- E-commerce: $50K+ monthly GMV OR 500+ repeat customers
+- Food delivery: 1K+ orders/month OR city breakeven
+
+INPUTS REQUIRED:
+- main_category: product category
+- stage: current stage (idea/beta/launched/growth)
+- current_revenue: monthly revenue
+- user_count: current active users
+- age_months: time since launch
+
+INTERPRETATION LOGIC:
+
+IF predicted_months <= 6:
+  message = "FAST TRACK - You're close to traction"
+  
+IF 6 < predicted_months <= 12:
+  message = "TYPICAL TIMELINE - Standard path for your category"
+  
+IF 12 < predicted_months <= 24:
+  message = "LONG ROAD - Slower than average, need acceleration"
+  
+IF predicted_months > 24:
+  message = "VERY LONG TIMELINE - Consider pivot or validation"
+
+COMPARE TO CATEGORY BENCHMARK:
+- Query benchmark for category average traction time
+- Show deviation: "Your [X] months vs category average [Y] months"
+
+RESPONSE TEMPLATE:
+**Diagnosis:**
+Predicted traction in [X] months ([MESSAGE]). Category average: [Y] months.
+
+**Options:**
+A. [Acceleration tactic 1 - e.g., pricing change, target segment pivot]
+B. [Acceleration tactic 2 - e.g., distribution channel, partnership]
+C. [If > 18 months: Consider pivot or smaller initial market]
+
+**Timeline:**
+Month [current+3]: [milestone 1]
+Month [current+6]: [milestone 2]
+Month [X]: Reach traction threshold
+
+**Next Steps:**
+- [Weekly/monthly metric to track progress]
+- [Validation test for acceleration tactic]
+- [Decision point: Continue vs pivot in X months]
+
+CRITICAL NOTES:
+- If current stage = "idea", prediction is highly uncertain → mention this
+- If user is already close to traction threshold, congratulate and focus on scaling
+- If predicted time > funding runway, FLAG THIS URGENTLY
+- Compare to similar products from find_competitors for validation
+
+This prompt is loaded when tool_calls includes "predict_traction_time".

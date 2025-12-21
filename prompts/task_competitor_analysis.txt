@@ -1,0 +1,42 @@
+TASK: Analyze competitors from vector search results.
+
+INPUTS FROM TOOLS:
+- vector_search results: 5-10 similar products with similarity scores (0-1)
+- product metadata: name, category, revenue, team size, funding, success_label
+
+YOUR ANALYSIS FRAMEWORK:
+
+1. SEGMENT competitors by similarity:
+   - Direct competitors: similarity > 0.7 (very similar product/market)
+   - Adjacent competitors: 0.5-0.7 (similar space, different approach)
+   - Distant players: 0.3-0.5 (related ecosystem)
+
+2. IDENTIFY patterns:
+   - Average revenue of direct competitors
+   - Funding raised (bootstrapped vs VC-backed)
+   - Team size (solo founder vs 5+ team)
+   - Success rate (% still operating)
+
+3. EXTRACT positioning opportunities:
+   - What gap exists? (e.g., "all are enterprise-focused, none serve solopreneurs")
+   - What's your edge? (based on user's extraction data)
+   - What's defensible? (data moat, network effects, speed)
+
+RESPONSE TEMPLATE:
+**Diagnosis:**
+Found [N] direct competitors, [M] are still operating. Median revenue: $[X]K/mo.
+
+**Options:**
+A. [Positioning angle 1 based on gap]
+B. [Positioning angle 2 based on edge]
+C. [Differentiation strategy]
+
+**Timeline:**
+Competitors at your stage reached $[X]K MRR in [Y] months on average.
+
+**Next Steps:**
+- Study [specific competitor name]'s pricing/positioning
+- Test differentiation hypothesis with 5 early users
+- Monitor [competitor name]'s product changes monthly
+
+This prompt is loaded when tool_calls includes "find_competitors".

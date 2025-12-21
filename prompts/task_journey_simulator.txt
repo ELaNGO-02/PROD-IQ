@@ -1,0 +1,83 @@
+TASK: Simulate product journey from current stage to target stage.
+
+TOOL: journey_simulator (Combines multiple ML models)
+OUTPUT: Month-by-month projection with milestones
+
+JOURNEY PHASES:
+1. Idea → Prototype (validation phase)
+2. Prototype → Beta (product-market fit search)
+3. Beta → Launch (scaling prep)
+4. Launch → Traction (growth phase)
+5. Traction → Scale (optimization phase)
+
+INPUTS REQUIRED:
+- current_stage: where user is now
+- target_stage: where user wants to be
+- extraction data: category, revenue, users, funding, team
+
+SIMULATION LOGIC:
+
+Use models in sequence:
+1. predict_traction_time → when to reach next milestone
+2. predict_revenue_estimate → revenue at 6/12/18/24 months
+3. predict_break_even_time → when profitability happens
+4. predict_survival_months → overall viability check
+5. query_benchmark → compare to category typical journey
+
+CREATE TIMELINE:
+Month 0 (Current):
+  - Revenue: $[X]K/mo
+  - Users: [Y]
+  - Status: [stage]
+
+Month 3:
+  - Revenue: $[predicted]K/mo
+  - Users: [predicted]
+  - Milestone: [from traction_time prediction]
+
+Month 6:
+  - Revenue: $[predicted]K/mo
+  - Milestone: [e.g., reach 100 customers]
+
+Month 12:
+  - Revenue: $[predicted]K/mo
+  - Milestone: [e.g., profitability OR next funding]
+
+Month 24:
+  - Revenue: $[predicted]K/mo
+  - Status: [target_stage achieved?]
+
+RISK CHECKPOINTS:
+- If survival < journey time: "⚠️ Likely won't complete journey (cash)"
+- If traction > journey time: "⚠️ Won't reach PMF before target"
+- If breakeven > journey time: "Will need [X]K in additional funding"
+
+RESPONSE TEMPLATE:
+**Diagnosis:**
+Journey from [current] to [target] will take [X] months ([feasibility verdict]).
+
+**Options:**
+A. [Standard path: Follow category typical timeline]
+B. [Accelerated path: Cut timeline by X% with [tactic]]
+C. [If risky: Alternative target that's more achievable]
+
+**Timeline:**
+[Show 4-6 key milestones with months and metrics]
+
+**Next Steps:**
+- [Immediate action for next 30 days]
+- [Milestone to validate model in 90 days]
+- [Decision point: Continue vs pivot at month X]
+
+COMBINE WITH:
+- find_competitors: Show how similar products progressed
+- validate_revenue: Reality-check revenue milestones
+- psychology_coaching: If timeline is discouraging
+
+CRITICAL NOTES:
+- If journey is > 24 months, warn about long road
+- If multiple models show red flags, recommend pivot consideration
+- Show both "realistic" and "optimistic" scenarios
+- Reference real examples from your dataset when possible
+
+This prompt is loaded when tool_calls includes "journey_simulator".

@@ -1,0 +1,19 @@
+# MCP Server
+mcp==0.9.0
+
+# LLM
+transformers==4.36.0
+torch==2.1.0
+accelerate==0.25.0
+bitsandbytes==0.41.0
+sentencepiece==0.1.99
+
+# Existing deps
+pandas==2.1.3
+numpy==1.24.3
+scikit-learn==1.3.2
+xgboost==2.0.2
+catboost==1.2.2
+joblib==1.3.2
+flask==3.0.0
+flask-cors==4.0.0

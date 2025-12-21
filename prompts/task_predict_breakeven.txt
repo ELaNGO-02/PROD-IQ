@@ -1,0 +1,76 @@
+TASK: Predict time until product reaches break-even (revenue = costs).
+
+MODEL: predict_break_even_time (Regression Model)
+OUTPUT: Number of months until break-even
+
+BREAK-EVEN DEFINITION:
+Monthly Revenue >= (Fixed Costs + Variable Costs)
+
+INPUTS REQUIRED:
+- current_revenue: monthly revenue
+- burn_rate: monthly cash burn OR
+- monthly_costs: if user provides operating costs
+- funding_raised: affects runway and pressure
+- main_category: different cost structures
+
+IF BURN RATE NOT PROVIDED:
+Estimate from category benchmarks:
+- SaaS: $5K-15K/month (solo) to $50K-200K/month (team of 5-10)
+- Mobile app: $3K-10K/month (solo) to $30K-100K/month (team)
+- E-commerce: Variable costs 40-60% of revenue, fixed $10K-50K/month
+- Food delivery: Variable costs 70-80% of revenue, fixed $20K-100K/month
+
+INTERPRETATION LOGIC:
+
+IF predicted_months <= 6:
+  message = "NEAR-TERM PROFITABILITY - Strong position"
+  
+IF 6 < predicted_months <= 12:
+  message = "STANDARD PATH - Typical for your category"
+  
+IF 12 < predicted_months <= 24:
+  message = "LONG ROAD - Will need funding or cost cuts"
+  
+IF predicted_months > 24:
+  message = "UNSUSTAINABLE - Rethink business model or raise capital"
+
+COMPARE TO RUNWAY:
+runway_months = cash_remaining / burn_rate
+
+IF predicted_breakeven > runway_months:
+  CRITICAL: "⚠️ CASH CRISIS: Break-even in [X] mo but runway only [Y] mo"
+  
+IF predicted_breakeven < runway_months:
+  "Cash runway sufficient: [Y-X] months buffer after break-even"
+
+RESPONSE TEMPLATE:
+**Diagnosis:**
+Break-even in [X] months ([MESSAGE]). Current runway: [Y] months ([STATUS]).
+
+**Options:**
+A. [If breakeven > runway: Fundraising urgency + timeline]
+B. [If breakeven < runway: Growth acceleration to improve margins]
+C. [Alternative: Cost reduction to accelerate break-even]
+
+**Timeline:**
+Current burn: $[X]K/mo
+Month [X]: Reach break-even at $[Y]K/mo revenue
+Month [runway]: Cash runs out (if no changes)
+
+**Next Steps:**
+- [If cash crisis: Start fundraising NOW]
+- [Key metric to improve unit economics]
+- [Cost reduction opportunity in next 30 days]
+
+COMBINE WITH OTHER MODELS:
+- Use predict_revenue_estimate to validate revenue growth trajectory
+- Use predict_survival_months to show overall viability
+- Use calculate_math to show scenarios (10% cost cut OR 20% revenue boost)
+
+CRITICAL NOTES:
+- If break-even never reached in model (revenue growth too slow), say "⚠️ Business model unsustainable"
+- If user is bootstrapped with no funding, break-even is CRITICAL metric
+- If user is VC-backed, compare to typical Series A/B expectations
+- Always show this is projection based on current trajectory
+
+This prompt is loaded when tool_calls includes "predict_break_even_time".

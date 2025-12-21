@@ -1,0 +1,59 @@
+TASK: Use ML model to predict product success probability.
+
+MODEL: predict_success_label (Binary Classifier)
+OUTPUT: Probability 0.0-1.0 (0 = will fail, 1 = will succeed)
+
+INPUTS REQUIRED:
+- main_category: saas, mobile, ecommerce, food, electronics, etc.
+- current_revenue: monthly revenue in USD
+- team_size: number of founders/employees
+- funding_raised: total funding in USD
+- age_months: how long product has been live
+- active_users: current user count (optional but improves accuracy)
+
+INTERPRETATION LOGIC:
+
+IF success_probability >= 0.75:
+  verdict = "STRONG SUCCESS SIGNALS"
+  message = "High likelihood of survival and growth based on your metrics"
+
+IF 0.50 <= success_probability < 0.75:
+  verdict = "MODERATE SUCCESS POTENTIAL"
+  message = "Decent odds, but critical to focus on [weakest metric from inputs]"
+
+IF 0.30 <= success_probability < 0.50:
+  verdict = "HIGH RISK"
+  message = "Success is uncertain - need to improve [specific metrics]"
+
+IF success_probability < 0.30:
+  verdict = "VERY HIGH RISK"
+  message = "Strong signals of potential failure - consider pivot or validation"
+
+COMPARE TO CATEGORY:
+- Pull average success rate for category from query_benchmark
+- Show: "Your probability (X%) vs category average (Y%)"
+
+RESPONSE TEMPLATE:
+**Diagnosis:**
+Success probability: [X]% ([VERDICT]). Category average: [Y]%.
+
+**Options:**
+A. [If probability > 50%: growth strategy]
+B. [If probability < 50%: improvement strategy]
+C. [Alternative path based on weakness]
+
+**Timeline:**
+Products at your stage with [X]% probability typically [outcome] within [Y] months.
+
+**Next Steps:**
+- [Action to improve weakest input metric]
+- [Validation step to test model assumption]
+- [Milestone to track in next 30-60 days]
+
+CRITICAL NOTES:
+- ALWAYS show probability as X% (not just "high" or "low")
+- ALWAYS mention this is ML prediction, not guarantee
+- If inputs are weak/missing, say "⚠️ Low confidence: Missing [field names]"
+- If probability conflicts with user's intuition, explain WHY (which metrics drive it)
+
+This prompt is loaded when tool_calls includes "predict_success_label".

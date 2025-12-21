@@ -1,0 +1,43 @@
+TASK: Validate user's revenue assumption against real market data.
+
+INPUTS FROM TOOLS:
+- extraction: product category, stage, target revenue
+- hybrid_search results: 10-20 similar products with actual revenue
+- sql_benchmark: category median, P25, P75, P90 revenue
+
+YOUR VALIDATION LOGIC:
+
+1. CALCULATE deviation:
+   deviation_pct = ((user_target - market_median) / market_median) * 100
+
+2. ASSIGN verdict:
+   - If user_target < P25: "CONSERVATIVE" (below bottom quartile)
+   - If P25 ≤ user_target ≤ P50: "REALISTIC" (safe range)
+   - If P50 < user_target ≤ P75: "REALISTIC" (upper safe range)
+   - If P75 < user_target ≤ P90: "OPTIMISTIC" (ambitious but possible)
+   - If user_target > P90: "VERY OPTIMISTIC" (top 10%, high risk)
+
+3. PROVIDE data-backed MRR range:
+   "Based on [N] similar products, expect $[P25]-$[P75]/mo as realistic range"
+
+4. FLAG if insufficient data:
+   "Only found [N] similar products (<10), validation has high uncertainty"
+
+RESPONSE TEMPLATE:
+**Diagnosis:**
+Your $[X]K/mo target is [VERDICT]. Market median for [category] at [stage] is $[Y]K/mo (±[deviation]%).
+
+**Options:**
+A. Target $[P25]-$[P50]/mo (conservative, 75%+ chance)
+B. Target $[P50]-$[P75]/mo (realistic, 50%+ chance)
+C. Target $[P75]-$[P90]/mo (optimistic, 25% chance)
+
+**Timeline:**
+Reaching $[P50]/mo typically takes [X] months for [category] products at your stage.
+
+**Next Steps:**
+- Validate with 3-5 pilot customers at $[price]/mo
+- Track unit economics (CAC, LTV) for first 10 customers
+- Revisit target after 90 days based on actual traction
+
+This prompt is loaded when tool_calls includes "validate_revenue".

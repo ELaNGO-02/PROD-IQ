@@ -1,0 +1,43 @@
+TASK: Extract structured data from user query about their startup.
+
+OUTPUT FORMAT: JSON inside <extraction></extraction> tags.
+
+EXAMPLE INPUT:
+"We're building a SaaS tool at $2K MRR with 40 users at $50/month. Want to hit $10K MRR."
+
+EXAMPLE OUTPUT:
+<extraction>
+{
+  "product_name": "SaaS tool",
+  "category": "saas",
+  "current_revenue": 2000,
+  "target_revenue": 10000,
+  "user_count": 40,
+  "price_point": 50,
+  "team_size": 2,
+  "funding_raised": 0,
+  "age_months": 6,
+  "core_question": "revenue_validation"
+}
+</extraction>
+
+FIELDS TO EXTRACT:
+- product_name: string (product name or "Unknown")
+- category: "saas", "mobile", "ecommerce", or "other"
+- current_revenue: number (monthly in USD, 0 if not mentioned)
+- target_revenue: number (monthly in USD, null if not mentioned)
+- user_count: number (0 if not mentioned)
+- price_point: number (in USD, null if not mentioned)
+- team_size: number (default 2)
+- funding_raised: number (total in USD, 0 if bootstrapped)
+- age_months: number (default 6)
+- burn_rate_monthly_est: number (monthly burn in USD, null if not mentioned)
+- core_question: "revenue_validation", "competitor_analysis", "survival_analysis", or "general_advice"
+
+RULES:
+1. Use actual values, NOT placeholders like "string or null"
+2. Numbers must be numbers (not strings)
+3. If not mentioned, use sensible defaults
+4. core_question should match what user is asking about
+
+Extract from this query:

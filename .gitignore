@@ -1,0 +1,38 @@
+# ========= Python =========
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.venv/
+.env
+
+# ========= Data =========
+data/
+training_*.jsonl
+
+# ========= ML Models =========
+models/
+model_offload/
+*.pkl
+*.joblib
+*.gguf
+
+# ========= Vector DB =========
+database/chroma_db_storage/
+database/chroma_db_storage_old/
+tests/database/chroma_db_storage/
+
+# ========= Artifacts =========
+ml_core/artifacts/*.pkl
+ml_core/artifacts/label_encoders/
+ml_core/artifacts/*_tfidf.pkl
+
+# ========= Cache / Logs =========
+.pytest_cache/
+*.log
+
+# ========= OS / IDE =========
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
