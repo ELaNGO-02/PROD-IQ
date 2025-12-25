@@ -5,10 +5,33 @@ __pycache__/
 *.pyd
 .venv/
 .env
+*.env  # ← ADD: Catch all .env variants
+.env.*  # ← ADD: .env.local, .env.production, etc.
+venv/  # ← ADD: Alternative venv name
+env/   # ← ADD: Another common name
+
+# ========= Secrets & Credentials =========  # ← ADD ENTIRE SECTION
+*.pem
+*.key
+*.cert
+*_secret*
+*_secrets*
+*password*
+*token*
+*api_key*
+config/secrets.yml
+config/credentials.yml
+.credentials
+.huggingface/
 
 # ========= Data =========
 data/
 training_*.jsonl
+*.csv  # ← ADD: CSV datasets can be large
+*.sqlite  # ← ADD: Database files
+*.sqlite3  # ← ADD
+*.db  # ← ADD
+database_recovered.sqlite  # ← ADD: Your specific file!
 
 # ========= ML Models =========
 models/
@@ -16,23 +39,71 @@ model_offload/
 *.pkl
 *.joblib
 *.gguf
+*.h5  # ← ADD: Keras models
+*.pt  # ← ADD: PyTorch models
+*.pth  # ← ADD: PyTorch checkpoints
+*.ckpt  # ← ADD: Checkpoints
+*.bin  # ← ADD: Binary weights
+*.safetensors  # ← ADD: SafeTensors format
+*.model  # ← ADD: Generic model files
+*.weights  # ← ADD: Weight files
 
 # ========= Vector DB =========
 database/chroma_db_storage/
 database/chroma_db_storage_old/
 tests/database/chroma_db_storage/
+database/  # ← ADD: Catch all database folder
 
 # ========= Artifacts =========
 ml_core/artifacts/*.pkl
 ml_core/artifacts/label_encoders/
 ml_core/artifacts/*_tfidf.pkl
+ml_core/artifacts/  # ← ADD: Catch entire artifacts folder
+artifacts/  # ← ADD: Any other artifacts folder
+checkpoints/  # ← ADD: Training checkpoints
+wandb/  # ← ADD: Weights & Biases logs
+mlruns/  # ← ADD: MLflow logs
+
+# ========= Recovered/Backup Files =========  # ← ADD ENTIRE SECTION
+recovered_files/
+*_recovered.*
+*_backup.*
+map.txt
+mcp_requirements.txt
 
 # ========= Cache / Logs =========
 .pytest_cache/
 *.log
+*.out  # ← ADD: Output files
+*.err  # ← ADD: Error logs
+logs/  # ← ADD: Log directories
+*.tmp  # ← ADD: Temp files
+*.temp  # ← ADD
+*.swp  # ← ADD: Vim swap files
+*.swo  # ← ADD
 
 # ========= OS / IDE =========
 .DS_Store
 Thumbs.db
 .vscode/
 .idea/
+*.iml  # ← ADD: IntelliJ files
+Desktop.ini  # ← ADD: Windows
+$RECYCLE.BIN/  # ← ADD: Windows
+
+# ========= Node (if you have frontend) =========  # ← ADD ENTIRE SECTION
+node_modules/
+package-lock.json
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ========= Test Files =========  # ← ADD ENTIRE SECTION
+api/test_frontend.html
+tests/*_debug.py
+tests/local_*.py
+*_test_output.*
+
+# ========= Jupyter Notebooks =========  # ← ADD ENTIRE SECTION
+.ipynb_checkpoints
+*.ipynb  # ← Only if you don't want to commit notebooks

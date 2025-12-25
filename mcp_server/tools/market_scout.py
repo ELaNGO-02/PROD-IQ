@@ -14,7 +14,8 @@ if str(PROJECT_ROOT) not in sys.path:
 from database.hybrid_search import HybridSearch
 
 
-async def market_scout_handler(data: Dict[str, Any]) -> Dict[str, Any]:
+# ✅ REMOVED async - now synchronous
+def market_scout_handler(data: Dict[str, Any]) -> Dict[str, Any]:
     """
     Perform deep competitor analysis
     
@@ -85,9 +86,11 @@ async def market_scout_handler(data: Dict[str, Any]) -> Dict[str, Any]:
         }
         
     except Exception as e:
+        import traceback
         return {
             "success": False,
             "error": str(e),
+            "traceback": traceback.format_exc(),
             "tool": "competitor_analysis"
         }
 
@@ -209,3 +212,19 @@ def _generate_recommendations(analysis: Dict, positioning: Dict) -> List[str]:
         ]
     
     return recommendations
+
+
+# Tool metadata
+TOOL_METADATA = {
+    "name": "competitor_analysis",
+    "description": "Analyze competitive landscape and generate positioning strategy",
+    "input_schema": {
+        "type": "object",
+        "properties": {
+            "company_name": {"type": "string"},
+            "category": {"type": "string"},
+            "description": {"type": "string"}
+        },
+        "required": ["company_name", "category"]
+    }
+}
