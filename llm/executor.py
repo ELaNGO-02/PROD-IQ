@@ -39,6 +39,37 @@ class ToolExecutor:
         
         print("   ✅ ToolExecutor initialized")
     
+    def execute_with_flag(self, tool_name: str, data: Dict) -> Dict:
+        """
+        Execute a single tool with explicit flag
+        Used when frontend sends explicit tool request
+        """
+        
+        print(f"   🎯 Explicit tool call: {tool_name}")
+        
+        # Map tool names to methods
+        tool_map = {
+            'find_competitors': self.find_competitors,
+            'validate_revenue': self.validate_revenue,
+            'predict_success': self.predict_success,
+            'predict_revenue': self.predict_revenue,
+            'predict_survival': self.predict_survival,
+            'calculate_math': self.calculate_math,
+            'journey_simulator': self.journey_simulator,  # ✅ Story telling
+            'benchmark_query': self.query_benchmark
+        }
+        
+        if tool_name not in tool_map:
+            return {'error': f'Unknown tool: {tool_name}'}
+        
+        try:
+            result = tool_map[tool_name](data)
+            print(f"      ✅ {tool_name} complete")
+            return result
+        except Exception as e:
+            print(f"      ❌ {tool_name} failed: {e}")
+            return {'error': str(e)}
+
     # ================================================================
     # PREDICTION TOOLS (Try MCP first, fallback to local)
     # ================================================================
@@ -147,7 +178,7 @@ class ToolExecutor:
             try:
                 mcp_result = self.mcp.call_tool('predict_break_even_time', data)
                 if mcp_result and 'error' not in mcp_result and mcp_result.get('success'):
-                    print("   ✅ Using MCP breakeven prediction")  # ⬅️ DEBUG
+                    print("   ✅ Using MCP breakeven prediction")
                     return self._format_breakeven_output(mcp_result, data, source='mcp')
                 else:
                     print(f"   ⚠️ MCP breakeven failed: {mcp_result.get('error', 'Unknown error')}")
@@ -156,13 +187,20 @@ class ToolExecutor:
         
         # Fallback to local ML
         try:
-            print("   🔄 Using local breakeven prediction")  # ⬅️ DEBUG
+            print("   🔄 Using local breakeven prediction")
             
-            # ⬅️ FIX: Handle None values properly
-            team_size = int(data.get('team_size', 2) or 2)
-            burn_rate = float(data.get('burn_rate_monthly_est') or (team_size * 5000))
-            funding_raised = float(data.get('funding_raised', 0) or 0)
-            current_revenue = float(data.get('current_revenue', 0) or 0)
+            # ✅ FIX: Handle None values properly with proper defaults
+            team_size = int(data.get('team_size') or 2)
+            burn_rate_input = data.get('burn_rate_monthly_est')
+            
+            # Only estimate if burn_rate is truly None/missing
+            if burn_rate_input is None or burn_rate_input == 0:
+                burn_rate = float(team_size * 5000)
+            else:
+                burn_rate = float(burn_rate_input)
+            
+            funding_raised = float(data.get('funding_raised') or 0)
+            current_revenue = float(data.get('current_revenue') or 0)
             
             input_data = {
                 'funding_raised': funding_raised,
@@ -179,7 +217,10 @@ class ToolExecutor:
             
         except Exception as e:
             print(f"[ERROR] predict_breakeven: {e}", file=sys.stderr)
+            import traceback
+            traceback.print_exc()
             return {'error': str(e)}
+
 
     
     def predict_survival(self, data: Dict) -> Dict[str, Any]:
@@ -317,32 +358,291 @@ class ToolExecutor:
             print(f"[ERROR] query_benchmark: {e}", file=sys.stderr)
             return {'error': str(e)}
     
-    def calculate_math(self, data: Dict) -> Dict[str, Any]:
-        """Perform revenue calculations"""
+    def calculate_math(self, state_manager) -> Dict[str, Any]:
+        """Enhanced math calculations with growth projections and scenarios"""
         try:
-            current = float(data.get('current_revenue', 0)) if data.get('current_revenue') else 0
-            target = float(data.get('target_revenue', 0)) if data.get('target_revenue') else 0
-            months = int(data.get('timeframe_months', 12)) if data.get('timeframe_months') else 12
-            price = float(data.get('price_point', 50)) if data.get('price_point') else 50
+            # ✅ FIX 1: CHECK FOR SCENARIO state_manager FIRST
+            # if state_manager.get('scenario') or state_manager.get('scenario_revenue') or state_manager.get('scenario_burn') or state_manager.get('scenario_ad_spend'):
+            #     print(f"   📊 Scenario detected: {state_manager.get('scenario', 'hypothetical')}")
+            #     return self._calculate_scenario_comparison(state_manager)
             
-            if current > 0 and target > 0 and months > 0:
-                growth_required = ((target / current) ** (1/months) - 1) * 100
-            else:
-                growth_required = None
+            # Extract base metrics
+            current_revenue = float(state_manager.get('current_revenue', 0) or 0)
+            target_revenue = float(state_manager.get('target_revenue', 0) or 0)
+            months = int(state_manager.get('timeframe_months', 6) or 6)
+            price = float(state_manager.get('price_point', 50) or 50)
+            if state_manager.get('scenario_active', False):
+                return self._calculate_scenario_comparison(state_manager)
+
+            burn_rate = float(state_manager.get('burn_rate_monthly_est', 0) or 0)
+            funding = float(state_manager.get('funding_raised', 0) or 0)
+            user_count = int(state_manager.get('user_count', 0) or 0)
+            growth_rate_monthly = float(state_manager.get('growth_rate_monthly', 0.20) or 0.20)
+            age_months = int(state_manager.get('age_months', 0) or 0)  # ✅ ADDED
             
-            users_needed = target / price if price > 0 else None
+            # Calculate runway
+            runway_months = self._calculate_runway_months(state_manager)
+            
+            # Calculate remaining funding
+            already_spent = burn_rate * age_months
+            remaining_funding = max(funding - already_spent, 0)
+            
+            # ✅ SCENARIO 1: Revenue Growth Projections
+            projections = {}
+            if current_revenue > 0:
+                for multiplier, label in [(1, 'current_growth'), (2, '2x_growth'), (3, '3x_growth')]:
+                    adjusted_rate = growth_rate_monthly * multiplier
+                    projected_revenue = {}
+                    
+                    for horizon in [3, 6, 12]:
+                        if horizon <= months * 2:
+                            future_revenue = current_revenue * ((1 + adjusted_rate) ** horizon)
+                            projected_revenue[f'{horizon}_months'] = round(future_revenue, 2)
+                    
+                    projections[label] = {
+                        'monthly_growth_rate': f"{adjusted_rate*100:.1f}%",
+                        'annual_growth_rate': f"{((1+adjusted_rate)**12 - 1)*100:.1f}%",
+                        'projections': projected_revenue
+                    }
+            
+            # ✅ SCENARIO 2: Burn Rate Scenarios (FIXED)
+            burn_scenarios = {}
+            if burn_rate > 0:
+                for reduction_pct, label in [(0, 'current'), (0.20, 'cut_20pct'), (0.30, 'cut_30pct')]:
+                    new_burn = burn_rate * (1 - reduction_pct)
+                    net_burn = new_burn - current_revenue
+                    
+                    if net_burn <= 0:
+                        new_runway = 999
+                        runway_status = "profitable"
+                    else:
+                        new_runway = remaining_funding / net_burn if remaining_funding > 0 else 0
+                        runway_status = "burning_cash"
+                    
+                    burn_scenarios[label] = {
+                        'burn_rate': round(new_burn, 2),
+                        'net_burn': round(net_burn, 2),
+                        'runway_months': round(new_runway, 1) if new_runway < 999 else 'infinite',
+                        'runway_extension': 'N/A' if new_runway >= 999 else round(new_runway - runway_months, 2),
+                        'status': runway_status
+                    }
+            
+            # ✅ SCENARIO 3-6: Keep your existing code unchanged
+            equity_valuations = {}
+            if current_revenue > 0:
+                annual_revenue = current_revenue * 12
+                
+                for multiple, label in [(5, 'conservative'), (10, 'market'), (15, 'optimistic')]:
+                    valuation = annual_revenue * multiple
+                    
+                    equity_valuations[label] = {
+                        'company_valuation': round(valuation, 2),
+                        'valuation_multiple': f"{multiple}x ARR",
+                        'equity_30_pct': round(valuation * 0.30, 2),
+                        'equity_25_pct': round(valuation * 0.25, 2),
+                        'equity_20_pct': round(valuation * 0.20, 2),
+                        'equity_15_pct': round(valuation * 0.15, 2)
+                    }
+            
+            growth_analysis = {}
+            if current_revenue > 0 and target_revenue > 0 and months > 0:
+                growth_required = ((target_revenue / current_revenue) ** (1/months) - 1) * 100
+                projected_with_current_growth = current_revenue * ((1 + growth_rate_monthly) ** months)
+                gap = target_revenue - projected_with_current_growth
+                gap_pct = (gap / target_revenue) * 100 if target_revenue > 0 else 0
+                
+                growth_analysis = {
+                    'current_growth_rate_monthly': f"{growth_rate_monthly*100:.1f}%",
+                    'required_growth_rate_monthly': f"{growth_required:.1f}%",
+                    'growth_acceleration_needed': f"{(growth_required - growth_rate_monthly*100):.1f}%",
+                    'achievable_with_current_growth': gap < 0,
+                    'projected_revenue_at_current_growth': round(projected_with_current_growth, 2),
+                    'revenue_gap': round(gap, 2),
+                    'gap_percentage': f"{abs(gap_pct):.1f}%"
+                }
+            
+            user_economics = {}
+            if price > 0:
+                users_needed_target = target_revenue / price if target_revenue > 0 else 0
+                users_needed_growth = users_needed_target - user_count if user_count > 0 else users_needed_target
+                users_per_month = users_needed_growth / months if months > 0 else 0
+                
+                user_economics = {
+                    'price_point': price,
+                    'current_users': user_count,
+                    'users_for_target': round(users_needed_target, 0),
+                    'new_users_needed': round(users_needed_growth, 0),
+                    'users_per_month_needed': round(users_per_month, 0),
+                    'weekly_signups_needed': round(users_per_month / 4, 0)
+                }
+            
+            survival_timeline = {}
+            if runway_months > 0 or runway_months == 999:
+                breakeven_months = self._calculate_breakeven_months(state_manager)
+                
+                survival_timeline = {
+                    'runway_months': round(runway_months, 1) if runway_months < 999 else 'infinite',
+                    'breakeven_months': round(breakeven_months, 1),
+                    'runway_sufficient': breakeven_months < runway_months,
+                    'months_short': round(max(0, breakeven_months - runway_months), 1) if runway_months < 999 else 0,
+                    'critical_deadline': runway_months < 12 if runway_months < 999 else False,
+                    'runway_end_date': self._calculate_date_from_now(runway_months) if runway_months < 999 else 'N/A'
+                }
             
             return {
-                'current_revenue': current,
-                'target_revenue': target,
-                'timeframe_months': months,
-                'monthly_growth_required_pct': growth_required,
-                'users_needed': users_needed,
-                'price_point': price
+                'success': True,
+                'base_metrics': {
+                    'current_revenue': current_revenue,
+                    'target_revenue': target_revenue,
+                    'timeframe_months': months,
+                    'current_burn_rate': burn_rate,
+                    'runway_months': round(runway_months, 1) if runway_months < 999 else 'infinite',
+                    'growth_rate_monthly': f"{growth_rate_monthly*100:.1f}%",
+                    'remaining_funding': remaining_funding,
+                    'already_spent': already_spent
+                },
+                'revenue_projections': projections,
+                'burn_scenarios': burn_scenarios,
+                'equity_valuations': equity_valuations,
+                'growth_analysis': growth_analysis,
+                'user_economics': user_economics,
+                'survival_timeline': survival_timeline
             }
+            
         except Exception as e:
             print(f"[ERROR] calculate_math: {e}", file=sys.stderr)
-            return {'error': str(e)}
+            import traceback
+            traceback.print_exc()
+            return {
+                'success': False,
+                'error': str(e),
+                'base_metrics': {
+                    'current_revenue': state_manager.get('current_revenue', 0),
+                    'target_revenue': state_manager.get('target_revenue', 0)
+                }
+            }
+
+        
+    def _calculate_scenario_comparison(self, data: Dict) -> Dict[str, Any]:
+        """Calculate scenario vs baseline comparison for what-if questions"""
+        try:
+            # Extract baseline metrics
+            baseline_revenue = float(data.get('current_revenue', 0) or 0)
+            baseline_burn = float(data.get('burn_rate_monthly_est', 0) or 0)
+            funding = float(data.get('funding_raised', 0) or 0)
+            age_months = int(data.get('age_months', 0) or 0)
+            
+            # Extract scenario metrics (use baseline if not provided)
+            scenario_revenue = float(data.get('scenario_revenue', baseline_revenue) or baseline_revenue)
+            scenario_burn = float(data.get('scenario_burn', baseline_burn) or baseline_burn)
+            scenario_ad_spend = float(data.get('scenario_ad_spend', 0) or 0)
+            
+            # If scenario_ad_spend provided, adjust scenario_burn
+            if scenario_ad_spend > 0:
+                current_ad_spend = float(data.get('ad_spend_monthly', 0) or 0)
+                ad_spend_increase = scenario_ad_spend - current_ad_spend
+                scenario_burn = baseline_burn + ad_spend_increase
+            
+            # Calculate remaining funding
+            already_spent = baseline_burn * age_months
+            remaining_funding = max(funding - already_spent, 0)
+            
+            # Calculate net burn (negative = profitable)
+            baseline_net_burn = baseline_burn - baseline_revenue
+            scenario_net_burn = scenario_burn - scenario_revenue
+            
+            # Calculate runway for both scenarios
+            if baseline_net_burn <= 0:
+                baseline_runway = 999  # Profitable
+                baseline_status = "profitable"
+            else:
+                baseline_runway = remaining_funding / baseline_net_burn
+                baseline_status = "burning_cash"
+            
+            if scenario_net_burn <= 0:
+                scenario_runway = 999  # Profitable
+                scenario_status = "profitable"
+            else:
+                scenario_runway = remaining_funding / scenario_net_burn
+                scenario_status = "burning_cash"
+            
+            # Determine if scenario is better
+            runway_change = scenario_runway - baseline_runway
+            
+            if scenario_net_burn < baseline_net_burn:
+                verdict = "speeds_up_profitability"
+                impact = "positive"
+            elif scenario_net_burn > baseline_net_burn:
+                verdict = "slows_down_profitability"
+                impact = "negative"
+            else:
+                verdict = "no_change"
+                impact = "neutral"
+            
+            # Calculate breakeven for both
+            baseline_breakeven = self._calculate_breakeven_from_metrics(
+                baseline_revenue, baseline_burn, data.get('growth_rate_monthly', 0.10)
+            )
+            scenario_breakeven = self._calculate_breakeven_from_metrics(
+                scenario_revenue, scenario_burn, data.get('growth_rate_monthly', 0.10)
+            )
+            
+            return {
+                'success': True,
+                'scenario_type': 'comparison',
+                'baseline': {
+                    'revenue': baseline_revenue,
+                    'burn': baseline_burn,
+                    'net_burn': baseline_net_burn,
+                    'runway_months': round(baseline_runway, 1) if baseline_runway < 999 else 'infinite',
+                    'breakeven_months': round(baseline_breakeven, 1),
+                    'status': baseline_status
+                },
+                'scenario': {
+                    'revenue': scenario_revenue,
+                    'burn': scenario_burn,
+                    'net_burn': scenario_net_burn,
+                    'runway_months': round(scenario_runway, 1) if scenario_runway < 999 else 'infinite',
+                    'breakeven_months': round(scenario_breakeven, 1),
+                    'status': scenario_status
+                },
+                'comparison': {
+                    'revenue_change': scenario_revenue - baseline_revenue,
+                    'burn_change': scenario_burn - baseline_burn,
+                    'net_burn_change': scenario_net_burn - baseline_net_burn,
+                    'runway_change': round(runway_change, 1) if runway_change < 999 else 'improved',
+                    'breakeven_change': round(scenario_breakeven - baseline_breakeven, 1),
+                    'verdict': verdict,
+                    'impact': impact
+                },
+                'remaining_funding': remaining_funding,
+                'already_spent': already_spent
+            }
+            
+        except Exception as e:
+            print(f"[ERROR] _calculate_scenario_comparison: {e}", file=sys.stderr)
+            import traceback
+            traceback.print_exc()
+            return {'success': False, 'error': str(e)}
+
+    def _calculate_breakeven_from_metrics(self, revenue: float, burn: float, growth_rate: float) -> float:
+        """Calculate breakeven months from specific metrics"""
+        if revenue >= burn:
+            return 1  # Already at breakeven
+        
+        if revenue <= 0:
+            return 18  # Pre-revenue
+        
+        if growth_rate <= 0:
+            return 999  # Can't reach breakeven without growth
+        
+        try:
+            import math
+            months = math.log(burn / revenue) / math.log(1 + growth_rate)
+            return max(1, min(months, 120))
+        except:
+            return 12  # Default fallback
+
     
     # ================================================================
     # FORMATTING HELPERS
@@ -419,6 +719,9 @@ class ToolExecutor:
         # Get detailed risk metrics
         survival_metrics = self._calculate_survival_probability(data, survival_months)
         
+        # ✅ Calculate cash-out date
+        cashout_date = self._calculate_date_from_now(survival_months)
+        
         return {
             'survival_months': float(survival_months),
             'verdict': self._classify_survival(survival_months),
@@ -426,6 +729,8 @@ class ToolExecutor:
             'risk_level': survival_metrics['risk_level'],
             'prob_12m': survival_metrics['prob_12m'],
             'runway_months': survival_metrics['runway_months'],
+            'cash_out_date': cashout_date,
+            'days_remaining': int(survival_months * 30),
             'warnings': result.get('warnings', []),
             'source': source
         }
@@ -443,16 +748,23 @@ class ToolExecutor:
         
         # Calculate runway to check feasibility
         runway_months = self._calculate_runway_months(data)
+        months_short = max(0, months - runway_months)
+        
+        # ✅ Calculate breakeven date
+        breakeven_date = self._calculate_date_from_now(months)
         
         return {
             'breakeven_months': float(months),
             'verdict': self._classify_breakeven_time(months),
             'runway_sufficient': months < runway_months,
             'runway_months': runway_months,
-            'months_short': max(0, months - runway_months),
+            'months_short': months_short,
+            'breakeven_date': breakeven_date,
+            'funding_gap': round(months_short * float(data.get('burn_rate_monthly_est', 0) or 5000), 2) if months_short > 0 else 0,
             'confidence': result.get('confidence', 0.7),
             'source': source
         }
+
     
     # ================================================================
     # HELPER METHODS (unchanged)
@@ -481,7 +793,8 @@ class ToolExecutor:
     def _calculate_breakeven_months(self, data: Dict) -> float:
         """Calculate breakeven from actual metrics"""
         current_revenue = float(data.get('current_revenue', 0) or 0)
-        burn_rate = float(data.get('burn_rate_monthly_est') or 0)
+        burn_rate = float(data.get('burn_rate_monthly_est', 0) or 0)
+        growth_rate_monthly = float(data.get('growth_rate_monthly', 0.10) or 0.10)
         
         # If no burn rate, estimate from team
         if burn_rate == 0:
@@ -492,22 +805,25 @@ class ToolExecutor:
         if current_revenue >= burn_rate:
             return 1  # Already at breakeven
         
-        # Calculate revenue gap
-        revenue_gap = burn_rate - current_revenue
+        # If no revenue yet
+        if current_revenue <= 0:
+            return 18  # Typical for pre-revenue startups
         
-        # Estimate growth rate from timeframe (default: 10% MoM growth)
-        monthly_growth_rate = 0.10
-        
-        # Calculate months to reach breakeven
+        # ✅ Calculate months to reach burn rate with growth
         # Formula: revenue * (1 + growth)^months = burn_rate
         # months = log(burn_rate / revenue) / log(1 + growth)
-        if current_revenue > 0:
+        try:
             import math
-            months = math.log(burn_rate / current_revenue) / math.log(1 + monthly_growth_rate)
-            return max(1, min(months, 120))
-        else:
-            # No revenue yet, use longer estimate
-            return 18  # Typical for pre-revenue startups
+            if growth_rate_monthly > 0:
+                months = math.log(burn_rate / current_revenue) / math.log(1 + growth_rate_monthly)
+                return max(1, min(months, 120))  # Clamp between 1-120 months
+            else:
+                # No growth, calculate linear
+                revenue_gap = burn_rate - current_revenue
+                return revenue_gap / max(current_revenue * 0.05, 100)  # Assume 5% monthly increase minimum
+        except:
+            return 12  # Default fallback
+
 
 
     def _calculate_survival_probability(self, data: Dict, survival_months: float) -> Dict:
@@ -588,3 +904,22 @@ class ToolExecutor:
             'food': '1K+ orders/month'
         }
         return milestones.get(category, 'Meaningful user traction')
+    
+    def _calculate_date_from_now(self, months: float) -> str:
+        """Calculate future date from now"""
+        try:
+            from datetime import datetime, timedelta
+            future_date = datetime.now() + timedelta(days=months * 30)
+            return future_date.strftime("%B %Y")
+        except:
+            return f"~{int(months)} months from now"
+
+    def get_previous_calculation(self, tool_name: str) -> Optional[Dict]:
+        """
+        Get previous calculation result for follow-up questions
+        This would be called by orchestrator to reference past results
+        """
+        # This is a placeholder - actual implementation would
+        # query the conversation state manager through orchestrator
+        return None
+
